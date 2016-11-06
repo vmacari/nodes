@@ -1,14 +1,22 @@
 /*
  *	1. display - SDA/SKL
  *  2. vibro
- *  3. rtc
+ *  3. rtc A3
  *  4. rgb
  *  5. touch
  *
  */
 
+// Enable debug prints to serial monitor
+#define MY_DEBUG 
+
+// Enable and select radio type attached
+#define MY_RADIO_NRF24
+#define MY_NODE_ID 1
+#define MY_RF24_CHANNEL  11
+
 #include <SPI.h>
-#include <MySensor.h>
+#include <MySensors.h>
 #include "RTClib.h"
 #include <Wire.h>
 #include <stdarg.h>
@@ -18,8 +26,6 @@
 
 #define OLED_RESET 0
 Adafruit_SSD1306 display(OLED_RESET);
-
-
 RTC_DS1307 rtc;
 
 #define TIME_MSG_LEN  11   // time sync to PC is HEADER followed by Unix time_t as ten ASCII digits
@@ -32,18 +38,18 @@ RTC_DS1307 rtc;
 long iterationCounter = 0;
 
 
-int     RTC_DS_PIN	= A3;
+int     RTC_DS_PIN	    = A3;
 int     touchSensorPin  = 8;
-int     vibroPin 	= 6;
+int     vibroPin 	      = 6;
 int     vibroValue      = 0;
-#define CHILD_ID_DISP 	0
+#define CHILD_ID_DISP 	  0
 
 #define RGB_B_PIN	3
 #define RGB_R_PIN	5
 #define RGB_G_PIN	4
 
 
-MySensor      gw;
+//MySensor      gw;
 boolean       timeReceived = false;
 unsigned long lastUpdate=0;
 unsigned long lastRequest=0;
@@ -52,7 +58,7 @@ MyMessage     lcdMsgDisp  (CHILD_ID_DISP, V_VAR1);
 int           writeIndex;
 char          lastMessages [10][10]; // 10 messages
 
-void setup()
+void before()
 {
 	Serial.begin(115200);
 
@@ -64,15 +70,8 @@ void setup()
 	digitalWrite(RGB_G_PIN, 0);
 	digitalWrite(RGB_B_PIN, 0);
 
-	Serial.println("Starting RF ... ");
-
-	gw.begin(incomingMessage, AUTO, true);
-	gw.sendSketchInfo("Display sensor", "1.0");
-	gw.present(CHILD_ID_DISP, S_CUSTOM);
-
-	delay(1000);
-
-	Serial.println("Starting display ... ");
+	//delay(1000);
+  Serial.println("Starting display ... ");
 
 
 //	display.initialize();
@@ -80,9 +79,9 @@ void setup()
         display.clearDisplay();   // clears the screen and buffer
 
 
-	display.setTextSize(2);
+	display.setTextSize(1);
 	display.setTextColor(WHITE, BLACK);
-	display.setCursor(25, 30);
+	display.setCursor(1, 1);
 	display.print("REBOOT");
 //        display.update();
         display.display(); // show splashscreen
@@ -103,6 +102,13 @@ void setup()
 	analogWrite(vibroPin, 0);
 
 	Serial.println("Done intialization");
+}
+
+void presentation() {
+  Serial.println("Presenting  node ... ");
+  //gw.begin(incomingMessage, AUTO, true);
+  sendSketchInfo("Display sensor", "1.0");
+  present(CHILD_ID_DISP, S_CUSTOM);
 }
 
 int lasMin = 0;
@@ -127,7 +133,7 @@ void drawClock (int xDate, int yDate, int x, int y)
 	if (!rtc.isrunning())
 	{
 
-                Serial.println("RTC not running");
+    Serial.println("RTC not running");
 		display.fillRect(x, y, 61, 9, BLACK);
 		display.setCursor(x + 1, y + 1);
 		display.setTextSize(1);
@@ -239,6 +245,8 @@ void loop()
 	double T, P, p0, a;
 
 
+  Serial.println("Loop ...");
+
 
 	drawClock(5, 0, 75, 0);
 
@@ -301,8 +309,9 @@ void loop()
 
 }
 
-void incomingMessage(const MyMessage &message)
-{
+
+void receive(const MyMessage &message) {
+  Serial.println("Recv Message");
 	// We only expect one type of message from controller. But we better check anyway.
 	if (message.type == V_LIGHT)
 	{
