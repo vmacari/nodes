@@ -33,23 +33,12 @@
 
 //-----------------------------------------------------------------------------
 // generic constants
-const unsigned long SLEEP_TIME = 30000; // Sleep time between reads (in milliseconds)
+const unsigned long SLEEP_TIME = 3000; // Sleep time between reads (in milliseconds)
 
 //-----------------------------------------------------------------------------
 // forecast constants
 const float         ALTITUDE   = 656; // ( 200 m) for Moldova
-//const char          *weather[] = { "stable", "sunny", "cloudy", "unstable", "thunderstorm", "unknown" };
 const float         xDelta = 10.0f, yDelta = 10.0f, zDelta = 10.0f;
-
-//enum FORECAST
-//{
-//	STABLE = 0,			// "Stable Weather Pattern"
-//	SUNNY = 1,			// "Slowly rising Good Weather", "Clear/Sunny "
-//	CLOUDY = 2,			// "Slowly falling L-Pressure ", "Cloudy/Rain "
-//	UNSTABLE = 3,		        // "Quickly rising H-Press",     "Not Stable"
-//	THUNDERSTORM = 4,	        // "Quickly falling L-Press",    "Thunderstorm"
-//	UNKNOWN = 5		        // "Unknown (More Time needed)
-//};
 
 // this CONVERSION_FACTOR is used to convert from Pa to kPa in forecast algorithm
 // get kPa/h be dividing hPa by 10
@@ -80,7 +69,6 @@ MyMessage   msgPirMotion  (CHILD_ID_PIR,       V_TRIPPED);
 
 MyMessage   msgTemp1      (CHILD_ID_TEMP1,     V_TEMP);
 MyMessage   msgPressure   (CHILD_ID_PRESSURE,  V_PRESSURE);
-//MyMessage   msgForecast   (CHILD_ID_PRESSURE,  V_FORECAST);
 
 MyMessage   msgStatusRed  (CHILD_ID_LED_R,     V_DIMMER);
 MyMessage   msgStatusGreen(CHILD_ID_LED_G,     V_DIMMER);
@@ -157,163 +145,6 @@ long getCurrentTimeInMS () {
 }
 
 //-----------------------------------------------------------------------------
-//float getLastPressureSamplesAverage()
-//{
-//	float lastPressureSamplesAverage = 0;
-//	for (int i = 0; i < LAST_SAMPLES_COUNT; i++)
-//	{
-//		lastPressureSamplesAverage += lastPressureSamples[i];
-//	}
-//	lastPressureSamplesAverage /= LAST_SAMPLES_COUNT;
-//
-//	return lastPressureSamplesAverage;
-//}
-
-//
-////-----------------------------------------------------------------------------
-//// Algorithm found here
-//// http://www.freescale.com/files/sensors/doc/app_note/AN3914.pdf
-//// Pressure in hPa -->  forecast done by calculating kPa/h
-//int sample(float pressure)
-//{
-//	// Calculate the average of the last n minutes.
-//	int index = minuteCount % LAST_SAMPLES_COUNT;
-//	lastPressureSamples[index] = pressure;
-//
-//	minuteCount++;
-//	if (minuteCount > 185)
-//	{
-//		minuteCount = 6;
-//	}
-//
-//	if (minuteCount == 5)
-//	{
-//		pressureAvg = getLastPressureSamplesAverage();
-//	}
-//	else if (minuteCount == 35)
-//	{
-//		float lastPressureAvg = getLastPressureSamplesAverage();
-//		float change = (lastPressureAvg - pressureAvg) * CONVERSION_FACTOR;
-//		if (firstRound) // first time initial 3 hour
-//		{
-//			dP_dt = change * 2; // note this is for t = 0.5hour
-//		}
-//		else
-//		{
-//			dP_dt = change / 1.5; // divide by 1.5 as this is the difference in time from 0 value.
-//		}
-//	}
-//	else if (minuteCount == 65)
-//	{
-//		float lastPressureAvg = getLastPressureSamplesAverage();
-//		float change = (lastPressureAvg - pressureAvg) * CONVERSION_FACTOR;
-//		if (firstRound) //first time initial 3 hour
-//		{
-//			dP_dt = change; //note this is for t = 1 hour
-//		}
-//		else
-//		{
-//			dP_dt = change / 2; //divide by 2 as this is the difference in time from 0 value
-//		}
-//	}
-//	else if (minuteCount == 95)
-//	{
-//		float lastPressureAvg = getLastPressureSamplesAverage();
-//		float change = (lastPressureAvg - pressureAvg) * CONVERSION_FACTOR;
-//		if (firstRound) // first time initial 3 hour
-//		{
-//			dP_dt = change / 1.5; // note this is for t = 1.5 hour
-//		}
-//		else
-//		{
-//			dP_dt = change / 2.5; // divide by 2.5 as this is the difference in time from 0 value
-//		}
-//	}
-//	else if (minuteCount == 125)
-//	{
-//		float lastPressureAvg = getLastPressureSamplesAverage();
-//		pressureAvg2 = lastPressureAvg; // store for later use.
-//		float change = (lastPressureAvg - pressureAvg) * CONVERSION_FACTOR;
-//		if (firstRound) // first time initial 3 hour
-//		{
-//			dP_dt = change / 2; // note this is for t = 2 hour
-//		}
-//		else
-//		{
-//			dP_dt = change / 3; // divide by 3 as this is the difference in time from 0 value
-//		}
-//	}
-//	else if (minuteCount == 155)
-//	{
-//		float lastPressureAvg = getLastPressureSamplesAverage();
-//		float change = (lastPressureAvg - pressureAvg) * CONVERSION_FACTOR;
-//		if (firstRound) // first time initial 3 hour
-//		{
-//			dP_dt = change / 2.5; // note this is for t = 2.5 hour
-//		}
-//		else
-//		{
-//			dP_dt = change / 3.5; // divide by 3.5 as this is the difference in time from 0 value
-//		}
-//	}
-//	else if (minuteCount == 185)
-//	{
-//		float lastPressureAvg = getLastPressureSamplesAverage();
-//		float change = (lastPressureAvg - pressureAvg) * CONVERSION_FACTOR;
-//		if (firstRound) // first time initial 3 hour
-//		{
-//			dP_dt = change / 3; // note this is for t = 3 hour
-//		}
-//		else
-//		{
-//			dP_dt = change / 4; // divide by 4 as this is the difference in time from 0 value
-//		}
-//		pressureAvg = pressureAvg2; // Equating the pressure at 0 to the pressure at 2 hour after 3 hours have past.
-//		firstRound = false; // flag to let you know that this is on the past 3 hour mark. Initialized to 0 outside main loop.
-//	}
-//
-//	int forecast = UNKNOWN;
-//	if (minuteCount < 35 && firstRound) //if time is less than 35 min on the first 3 hour interval.
-//	{
-//		forecast = UNKNOWN;
-//	}
-//	else if (dP_dt < (-0.25))
-//	{
-//		forecast = THUNDERSTORM;
-//	}
-//	else if (dP_dt > 0.25)
-//	{
-//		forecast = UNSTABLE;
-//	}
-//	else if ((dP_dt > (-0.25)) && (dP_dt < (-0.05)))
-//	{
-//		forecast = CLOUDY;
-//	}
-//	else if ((dP_dt > 0.05) && (dP_dt < 0.25))
-//	{
-//		forecast = SUNNY;
-//	}
-//	else if ((dP_dt >(-0.05)) && (dP_dt < 0.05))
-//	{
-//		forecast = STABLE;
-//	}
-//	else
-//	{
-//		forecast = UNKNOWN;
-//	}
-//
-//	// uncomment when debugging
-//	Serial.print(F("Forecast at minute "));
-//	Serial.print(minuteCount);
-//	Serial.print(F(" dP/dt = "));
-//	Serial.print(dP_dt);
-//	Serial.print(F("kPa/h --> "));
-//	Serial.println(weather[forecast]);
-//
-//	return forecast;
-//}
-
-//-----------------------------------------------------------------------------
 void setup()
 {
     // setup IO
@@ -327,30 +158,29 @@ void setup()
 
     // setup peripherials
     lightSensor.begin();
-    //dht.setup(HUMIDITY_SENSOR_DIGITAL_PIN);
     dht.begin();
       
-      dht.temperature().getSensor(&sensor);
-//      Serial.println("------------------------------------");
-//      Serial.println("Temperature");
-//      Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-//      Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-//      Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-//      Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" *C");
-//      Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" *C");
-//      Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" *C");  
-//      Serial.println("------------------------------------");
-//      // Print humidity sensor details.
-//      dht.humidity().getSensor(&sensor);
-//      Serial.println("------------------------------------");
-//      Serial.println("Humidity");
-//      Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-//      Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-//      Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-//      Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println("%");
-//      Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println("%");
-//      Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println("%");  
-//      Serial.println("------------------------------------");      
+    dht.temperature().getSensor(&sensor);
+//    Serial.println("------------------------------------");
+//    Serial.println("Temperature");
+//    Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+//    Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+//    Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+//    Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" *C");
+//    Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" *C");
+//    Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" *C");  
+//    Serial.println("------------------------------------");
+//    // Print humidity sensor details.
+//    dht.humidity().getSensor(&sensor);
+//    Serial.println("------------------------------------");
+//    Serial.println("Humidity");
+//    Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+//    Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+//    Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+//    Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println("%");
+//    Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println("%");
+//    Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println("%");  
+//    Serial.println("------------------------------------");      
     dhtSamplingPeriode = sensor.min_delay / 1000; //dht.getMinimumSamplingPeriod();
 
     if (!bmp.begin())
@@ -371,45 +201,46 @@ void setup()
     send( msgStatusRed.set(loadState(RGB_R_LED_DIGITAL_PIN)), false );
     send( msgStatusGreen.set(loadState(RGB_G_LED_DIGITAL_PIN)), false );
     send( msgStatusBlue.set(loadState(RGB_B_LED_DIGITAL_PIN)), false );
-
-    
 }
 
 //-----------------------------------------------------------------------------
+#define PRESENTATION_DELAY 50
 void presentation () {
     sendSketchInfo("Node 3 (lux, bmp, xyz ...)", "1.0");
 
     present(CHILD_ID_LIGHT, S_LIGHT_LEVEL, "Light level");
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_HUM,   S_HUM,         "Humidity sensor" );
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_TEMP2, S_TEMP,        "Temperature (From humidity)" );
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_PIR,   S_MOTION,      "PIR motion" );
-    delay(100);
+    delay(PRESENTATION_DELAY);
 
     present(CHILD_ID_PRESSURE,   S_BARO, "Pressure sensor");
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_TEMP1, S_TEMP, "Temperature from pressure");
-    delay(100);
+    delay(PRESENTATION_DELAY);
 
     present(CHILD_ID_LED_R, S_DIMMER, "RED led",   false);
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_LED_G, S_DIMMER, "GREEN led", false);
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_LED_B, S_DIMMER, "BLUE led",  false);
-    delay(100);
+    delay(PRESENTATION_DELAY);
 
     present(CHILD_ID_INFRARED, S_DIMMER, "Flame sensor",   false);
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_MICROPHONE, S_DIMMER, "Microphone sensor",   false);
-    delay(100);
+    delay(PRESENTATION_DELAY);
     present(CHILD_ID_COMPASS, S_CUSTOM, "Magnetic compas",   false); 
-    delay(100);
+    delay(PRESENTATION_DELAY);
 }
 
 
 //-----------------------------------------------------------------------------
+float dhtData = 0;
+int levelSensor =0;
 void loop()
 {
   //---------------------------------------------------------------------------
@@ -427,30 +258,34 @@ void loop()
   // read temperature and humidity from DHT sensor
   if (getCurrentTimeInMS () > (lastDhtSamplingTime + dhtSamplingPeriode)) {
     lastDhtSamplingTime = getCurrentTimeInMS ();
+    
 
     dht.temperature().getEvent(&event);
-    float temperature = event.temperature; 
+    dhtData = event.temperature; 
     
-    if (!isnan(temperature) && (lastTemp2 != temperature)) {
-      lastTemp2 = temperature;
+    if (!isnan(dhtData) && (lastTemp2 != dhtData)) {
+      lastTemp2 = dhtData;
       //temperature = dht.toFahrenheit(temperature);
-      Serial.print("Sending temperature from DHT : ");
-      Serial.println(temperature);
-      send(msgTemp2.set(temperature, 1));
-    } else if (isnan(temperature)) {
-      Serial.println("failed to read temperature from DHT");
-    }
+      //Serial.print("Sending temperature from DHT : ");
+      //Serial.println(temperature);
+      send(msgTemp2.set(dhtData, 1));
+    } 
+//    else if (isnan(dhtData)) {
+//      Serial.println("failed to read temperature from DHT");
+//    }
 
     dht.humidity().getEvent(&event);
-    float humidity = event.relative_humidity; 
-    if (!isnan(humidity) && (lastHum != humidity)) {
-      lastHum = humidity;
-      Serial.print("Sending humidity from DHT : ");
-      Serial.println(humidity);
-      send(msgHumidity.set(humidity, 1));
-    } else if (isnan(humidity)) {
-      Serial.println("failed to read humidity from DHT");
-    }
+    //float humidity 
+    dhtData = event.relative_humidity; 
+    if (!isnan(dhtData) && (lastHum != dhtData)) {
+      lastHum = dhtData;
+//      Serial.print("Sending humidity from DHT : ");
+//      Serial.println(humidity);
+      send(msgHumidity.set(dhtData, 1));
+    } 
+//    else if (isnan(dhtData)) {
+//      Serial.println("failed to read humidity from DHT");
+//    }
   }
 
   //---------------------------------------------------------------------------
@@ -459,29 +294,24 @@ void loop()
   if (lastMotionValue != tripped ) {
     lastMotionValue = tripped;
 
-    Serial.print("Motion value changed : ");
-    Serial.println(tripped);
+//    Serial.print("Motion value changed : ");
+//    Serial.println(tripped);
     send(msgPirMotion.set(tripped ? "1": "0"));  // Send tripped value to gw
   }
 
   //---------------------------------------------------------------------------
   // read pressure and temperature for forecast
-  float temperature = bmp.readTemperature();
-  if (temperature != lastTemp1) {
-    lastTemp1 = temperature;
-    send(msgTemp1.set(temperature, 1));
-
+  //float temperature 
+  dhtData = bmp.readTemperature();
+  if (dhtData != lastTemp1) {
+    lastTemp1 = dhtData;
+    send(msgTemp1.set(dhtData, 1));
   }
 
-  float pressure = bmp.readSealevelPressure(ALTITUDE) / 100.0;
-  if (pressure != lastPressure) {
-    lastPressure = pressure;
-    send(msgPressure.set(pressure, 0));
-//    int forecast = sample(pressure);
-//    if (lastForecast != forecast) {
-//      lastForecast = forecast;
-//      send(msgForecast.set(weather[forecast]));
-//    }
+  dhtData = bmp.readSealevelPressure(ALTITUDE) / 100.0;
+  if (dhtData != lastPressure) {
+    lastPressure = dhtData;
+    send(msgPressure.set(dhtData, 0));
   }
 
   //---------------------------------------------------------------------------
@@ -489,17 +319,18 @@ void loop()
 
   //---------------------------------------------------------------------------
   //  read IR an Microphone levels
-  int microphoneLevel = analogRead(SENSOR_MICROPHONE_ANALOG_PIN);
-  int irLevel         = analogRead(SENSOR_IR_ANALOG_PIN);
+  levelSensor = analogRead(SENSOR_MICROPHONE_ANALOG_PIN);
+  
 
-  if (lastMicrophoneLevel != microphoneLevel) {
-    lastMicrophoneLevel = microphoneLevel;
-    send(msgMicValue.set(microphoneLevel));
+  if (lastMicrophoneLevel != levelSensor) {
+    lastMicrophoneLevel = levelSensor;
+    send(msgMicValue.set(levelSensor));
   }
 
-  if (lastIrLevel != irLevel) {
-    lastIrLevel = irLevel;
-    send(msgIrValue.set(irLevel));
+  levelSensor = analogRead(SENSOR_IR_ANALOG_PIN);
+  if (lastIrLevel != levelSensor) {
+    lastIrLevel = levelSensor;
+    send(msgIrValue.set(levelSensor));
   }
 
   //---------------------------------------------------------------------------
@@ -531,33 +362,33 @@ void incomingMessage(const MyMessage &message)
   if (message.type == V_LIGHT) {
 
   } else if (message.type == V_DIMMER) {
-//      	uint8_t incomingDimmerStatus = message.getByte();
-//      	incomingDimmerStatus = constrain((int8_t)incomingDimmerStatus, 0, 100);
-//        if (message.sensor == CHILD_ID_LED_R) {
-//          analogWrite(RGB_R_LED_DIGITAL_PIN, 255 * incomingDimmerStatus / 100);
-//          if (lastRedLedStatus != incomingDimmerStatus) {
-//            lastRedLedStatus = incomingDimmerStatus;
-//            send(msgStatusRed.set(incomingDimmerStatus),false);
-//            saveState(RGB_R_LED_DIGITAL_PIN, incomingDimmerStatus);
-//          }
-//        }
-//        else if (message.sensor == CHILD_ID_LED_G) {
-//          analogWrite(RGB_G_LED_DIGITAL_PIN, 255 * incomingDimmerStatus / 100);
-//          if (lastGreenLedStatus != incomingDimmerStatus) {
-//              lastGreenLedStatus = incomingDimmerStatus;
-//              send(msgStatusGreen.set(incomingDimmerStatus),false);
-//              saveState(RGB_G_LED_DIGITAL_PIN, incomingDimmerStatus);
-//          }
-//        }
-//        else if (message.sensor == CHILD_ID_LED_B) {
-//          analogWrite(RGB_B_LED_DIGITAL_PIN, 255 * incomingDimmerStatus / 100);
-//          if (lastBlueLedStatus != incomingDimmerStatus) {
-//              lastBlueLedStatus = incomingDimmerStatus;
-//              send(msgStatusBlue.set(incomingDimmerStatus),false);
-//              saveState(RGB_B_LED_DIGITAL_PIN, incomingDimmerStatus);
-//          }
-//
-//        }
+      	uint8_t incomingDimmerStatus = message.getByte();
+      	incomingDimmerStatus = constrain((int8_t)incomingDimmerStatus, 0, 100);
+        if (message.sensor == CHILD_ID_LED_R) {
+          analogWrite(RGB_R_LED_DIGITAL_PIN, 255 * incomingDimmerStatus / 100);
+          if (lastRedLedStatus != incomingDimmerStatus) {
+            lastRedLedStatus = incomingDimmerStatus;
+            send(msgStatusRed.set(incomingDimmerStatus),false);
+            saveState(RGB_R_LED_DIGITAL_PIN, incomingDimmerStatus);
+          }
+        }
+        else if (message.sensor == CHILD_ID_LED_G) {
+          analogWrite(RGB_G_LED_DIGITAL_PIN, 255 * incomingDimmerStatus / 100);
+          if (lastGreenLedStatus != incomingDimmerStatus) {
+              lastGreenLedStatus = incomingDimmerStatus;
+              send(msgStatusGreen.set(incomingDimmerStatus),false);
+              saveState(RGB_G_LED_DIGITAL_PIN, incomingDimmerStatus);
+          }
+        }
+        else if (message.sensor == CHILD_ID_LED_B) {
+          analogWrite(RGB_B_LED_DIGITAL_PIN, 255 * incomingDimmerStatus / 100);
+          if (lastBlueLedStatus != incomingDimmerStatus) {
+              lastBlueLedStatus = incomingDimmerStatus;
+              send(msgStatusBlue.set(incomingDimmerStatus),false);
+              saveState(RGB_B_LED_DIGITAL_PIN, incomingDimmerStatus);
+          }
+
+        }
   }
 }
 //-----------------------------------------------------------------------------
