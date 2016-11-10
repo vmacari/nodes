@@ -11,7 +11,7 @@
 //-----------------------------------------------------------------------------
 // My sensors definitions
 
-#define NODE_ID_XYZ_HUM    100
+#define NODE_ID_XYZ_HUM    4
 #define MY_LEDS_BLINKING_FEATURE
 #define MY_DEBUG 
 

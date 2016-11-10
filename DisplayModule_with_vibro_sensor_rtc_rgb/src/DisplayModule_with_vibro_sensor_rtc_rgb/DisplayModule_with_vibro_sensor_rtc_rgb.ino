@@ -1,33 +1,37 @@
-/*
- *	1. display - SDA/SKL
- *  2. vibro
- *  3. rtc A3
- *  4. rgb
- *  5. touch
- *
- */
+//------------------------------------------------------------------------------
+//	1. display - SDA/SKL
+//  2. vibro
+//  3. rtc A3
+//  4. rgb
+//  5. touch
+//
+//------------------------------------------------------------------------------
 
 // Enable debug prints to serial monitor
 #define MY_DEBUG 
 
+//------------------------------------------------------------------------------
 // Enable and select radio type attached
 #define MY_RADIO_NRF24
-#define MY_NODE_ID 1
-#define MY_RF24_CHANNEL  11
+#define MY_NODE_ID  5
+//#define MY_RF24_CHANNEL  11
 
+//------------------------------------------------------------------------------
 #include <SPI.h>
 #include <MySensors.h>
 #include "RTClib.h"
 #include <Wire.h>
 #include <stdarg.h>
 
-#include <Adafruit_GFX.h>
+#include <Adafruit_GFX.h>l
 #include <Adafruit_SSD1306.h>
 
+//------------------------------------------------------------------------------
 #define OLED_RESET 0
 Adafruit_SSD1306 display(OLED_RESET);
 RTC_DS1307 rtc;
 
+//------------------------------------------------------------------------------
 #define TIME_MSG_LEN  11   // time sync to PC is HEADER followed by Unix time_t as ten ASCII digits
 #define TIME_HEADER  'T'   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message
@@ -35,6 +39,7 @@ RTC_DS1307 rtc;
 #define SDA_PIN A4
 #define SCL_PIN A5
 
+//------------------------------------------------------------------------------
 long iterationCounter = 0;
 
 
@@ -48,16 +53,17 @@ int     vibroValue      = 0;
 #define RGB_R_PIN	5
 #define RGB_G_PIN	4
 
-
-//MySensor      gw;
+//------------------------------------------------------------------------------
 boolean       timeReceived = false;
 unsigned long lastUpdate=0;
 unsigned long lastRequest=0;
+//------------------------------------------------------------------------------
 
 MyMessage     lcdMsgDisp  (CHILD_ID_DISP, V_VAR1);
 int           writeIndex;
 char          lastMessages [10][10]; // 10 messages
 
+//------------------------------------------------------------------------------
 void before()
 {
 	Serial.begin(115200);
@@ -75,14 +81,13 @@ void before()
 
 
 //	display.initialize();
-        display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
-        display.clearDisplay();   // clears the screen and buffer
-
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
+  display.clearDisplay();   // clears the screen and buffer
 
 	display.setTextSize(1);
 	display.setTextColor(WHITE, BLACK);
 	display.setCursor(1, 1);
-	display.print("REBOOT");
+	display.print("REBOOT1");
 //        display.update();
         display.display(); // show splashscreen
 
@@ -104,9 +109,10 @@ void before()
 	Serial.println("Done intialization");
 }
 
+//------------------------------------------------------------------------------
 void presentation() {
+  
   Serial.println("Presenting  node ... ");
-  //gw.begin(incomingMessage, AUTO, true);
   sendSketchInfo("Display sensor", "1.0");
   present(CHILD_ID_DISP, S_CUSTOM);
 }
@@ -119,6 +125,7 @@ int lasDay = 0;
 int lastYear = 0;
 int lastMon = 0;
 
+//------------------------------------------------------------------------------
 void drawClock (int xDate, int yDate, int x, int y)
 {
 
@@ -194,8 +201,7 @@ void drawClock (int xDate, int yDate, int x, int y)
 	if (lastHr != hours || lasMin != minutes || lastSec != seconds)
 	{
 
-                   Serial.println("Update time");
-
+     Serial.println("Update time");
 		display.fillRect(x, y, 61, 9, BLACK);
 		display.setCursor(x + 1, y + 1);
 
@@ -239,6 +245,8 @@ int touchValue = 0;
 int lastTouchValue = 1;
 boolean dismissCurrentMessage = false;
 boolean newMessageArrived = false;
+
+//------------------------------------------------------------------------------
 void loop()
 {
 	char status;
@@ -251,7 +259,7 @@ void loop()
 	drawClock(5, 0, 75, 0);
 
 
-        touchValue = digitalRead(touchSensorPin);
+   touchValue = digitalRead(touchSensorPin);
 
 	if (touchValue) {
 		vibroValue ++;
@@ -305,11 +313,9 @@ void loop()
   }
 
   // kepp alerting (flashing led) if there are any unread messages
-
-
 }
 
-
+//------------------------------------------------------------------------------
 void receive(const MyMessage &message) {
   Serial.println("Recv Message");
 	// We only expect one type of message from controller. But we better check anyway.

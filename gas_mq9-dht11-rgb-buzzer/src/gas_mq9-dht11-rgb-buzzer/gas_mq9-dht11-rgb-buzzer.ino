@@ -9,7 +9,7 @@
 //
 //  BOARD WIRING:
 //	D7 				- (?) Motion sensor
-//	A0 				- Gas sensor
+//	A0 				- Gas sensor (MQ9)
 //  D4, D5, D6 		- RGB Led
 //  D3 				- Buzzer
 //  D2 				- DHT Sensort
@@ -29,8 +29,7 @@
 #define MY_LEDS_BLINKING_FEATURE
 #define MY_DEBUG 
 #define MY_RADIO_NRF24
-#define MY_NODE_ID        102
-
+#define MY_NODE_ID        2
 
 #include <Wire.h>
 #include <SPI.h>
@@ -42,16 +41,20 @@
 
 //------------------------------------------------------------------------------
 // Constants
+#define MAX_GAS_UPDATE_COUNTER      10
+#define MAX_HUM_UPDATE_COUNTER      10
+#define MAX_TEMP_UPDATE_COUNTER     10
+#define MAX_MOTION_UPDATE_COUNTER   10
 
 //------------------------------------------------------------------------------
 // sensor pins
 #define HUMIDITY_SENSOR_DIGITAL_PIN 2
 #define MOTION_SENSOR_DIGITAL_PIN   7
 #define GAS_SENSOR_ANALOG_PIN       A0
-#define LED_B_DIGITAL_PIN			4
-#define LED_G_DIGITAL_PIN			5
-#define LED_R_DIGITAL_PIN			6
-#define BUZZER_DIGITAL_PIN   		3
+#define LED_B_DIGITAL_PIN			      4
+#define LED_G_DIGITAL_PIN			      5
+#define LED_R_DIGITAL_PIN		      	6
+#define BUZZER_DIGITAL_PIN   		    3
 
 //------------------------------------------------------------------------------
 // sensor hardware interface objects
@@ -66,64 +69,67 @@ float  			    lastTemperatureValue 		        = 0;
 unsigned long 	lastHumiditySensorReadTime 	    = 0;
 uint8_t 		    lastGasValue  				          = 0;
 
+int             humidityUpdateCouner            = 0;
+int             temperatureUpdateCounter        = 0;
+int             gasUpdateCounter                = 0;
+int             motionUpdateCounter             = 0;
+
 //------------------------------------------------------------------------------
 // sensors Id's
-#define CHILD_ID_HUM_DHT 	1
+#define CHILD_ID_HUM_DHT 	  1
 #define CHILD_ID_TEMP_DHT 	2
 
-#define CHILD_ID_BUZZER 	3
 
-#define CHILD_ID_MOTION		4
-#define CHILD_ID_GAS		5
+#define CHILD_ID_BUZZER 	  3
 
-#define CHILD_ID_LED_R		6
-#define CHILD_ID_LED_G		7
-#define CHILD_ID_LED_B		8
+#define CHILD_ID_MOTION		  4
+#define CHILD_ID_GAS		    5
+
+#define CHILD_ID_LED_R		  6
+#define CHILD_ID_LED_G		  7
+#define CHILD_ID_LED_B		  8
 
 //------------------------------------------------------------------------------
 // Messages
-MyMessage msgHum		(CHILD_ID_HUM_DHT, 	V_HUM);
-MyMessage msgTemp		(CHILD_ID_TEMP_DHT,     V_TEMP);
+MyMessage msgHum		(CHILD_ID_HUM_DHT, 	  V_HUM);
+MyMessage msgTemp		(CHILD_ID_TEMP_DHT,   V_TEMP);
 
-MyMessage msgGas		(CHILD_ID_GAS, 		V_VAR1);
-MyMessage msgMotion		(CHILD_ID_MOTION,	V_ARMED);
+MyMessage msgGas		(CHILD_ID_GAS, 		    V_LEVEL);
+MyMessage msgMotion		(CHILD_ID_MOTION,	  V_TRIPPED);
 
-MyMessage msgBuzzer		(CHILD_ID_BUZZER, 	V_VAR1);
+MyMessage msgBuzzer		(CHILD_ID_BUZZER, 	V_PERCENTAGE);
 
-MyMessage msgLedR		(CHILD_ID_LED_R, 	V_LIGHT_LEVEL);
-MyMessage msgLedG		(CHILD_ID_LED_G, 	V_LIGHT_LEVEL);
-MyMessage msgLedB		(CHILD_ID_LED_B, 	V_LIGHT_LEVEL);
+MyMessage msgLedR		(CHILD_ID_LED_R, 	    V_PERCENTAGE);
+MyMessage msgLedG		(CHILD_ID_LED_G, 	    V_PERCENTAGE);
+MyMessage msgLedB		(CHILD_ID_LED_B, 	    V_PERCENTAGE);
 
 //------------------------------------------------------------------------------
 #define PRESENTATION_DELAY 50
 void presentation () {
-  sendSketchInfo("K-Gas, Motion, DHT, buzz, rgb", "1.0"); delay(PRESENTATION_DELAY);
-  present(CHILD_ID_HUM_DHT,  S_HUM);          delay(PRESENTATION_DELAY);
-  present(CHILD_ID_TEMP_DHT, S_TEMP);         delay(PRESENTATION_DELAY);
-  present(CHILD_ID_BUZZER,   S_LIGHT);        delay(PRESENTATION_DELAY);
+  
+  sendSketchInfo("Gas,Motion,DHT,buz,rgb", "1.0");        delay(PRESENTATION_DELAY);
+  
+  present(CHILD_ID_HUM_DHT,  S_HUM,  "DHT humidity");            delay(PRESENTATION_DELAY);
+  present(CHILD_ID_TEMP_DHT, S_TEMP, "DHT temperature");         delay(PRESENTATION_DELAY);
+  present(CHILD_ID_BUZZER,   S_DIMMER, "Buzzer");                 delay(PRESENTATION_DELAY);
 
-  present(CHILD_ID_MOTION,   S_LIGHT);        delay(PRESENTATION_DELAY);
-  present(CHILD_ID_GAS,      S_LIGHT);        delay(PRESENTATION_DELAY);
+  present(CHILD_ID_MOTION,   S_MOTION, "Motion sensor");          delay(PRESENTATION_DELAY);
+  present(CHILD_ID_GAS,      S_GAS, "MQ-9 GAs sensor");        delay(PRESENTATION_DELAY);
 
-  present(CHILD_ID_LED_R,    S_LIGHT);        delay(PRESENTATION_DELAY);
-  present(CHILD_ID_LED_G,    S_LIGHT);        delay(PRESENTATION_DELAY);
-  present(CHILD_ID_LED_B,    S_LIGHT);        delay(PRESENTATION_DELAY);
+  present(CHILD_ID_LED_R,    S_DIMMER, "Actuator Red led");       delay(PRESENTATION_DELAY);
+  present(CHILD_ID_LED_G,    S_DIMMER, "Actuator Green led");     delay(PRESENTATION_DELAY);
+  present(CHILD_ID_LED_B,    S_DIMMER, "Actuator Blue led");      delay(PRESENTATION_DELAY);
 }
 //------------------------------------------------------------------------------
 void setup()
 {
-
-  pinMode(MOTION_SENSOR_DIGITAL_PIN, INPUT);      // sets the motion sensor digital pin as input
-  
-
-  // setup dht (humiditySensor)
-   //humiditySensor.setup(HUMIDITY_SENSOR_DIGITAL_PIN);
+   pinMode(MOTION_SENSOR_DIGITAL_PIN, INPUT);      // sets the motion sensor digital pin as input
    gas.begin();
 
    pinMode(LED_B_DIGITAL_PIN, OUTPUT);
    pinMode(LED_G_DIGITAL_PIN, OUTPUT);
    pinMode(LED_R_DIGITAL_PIN, OUTPUT);
-   
+
    analogWrite(LED_R_DIGITAL_PIN, loadState(CHILD_ID_LED_R));
    analogWrite(LED_G_DIGITAL_PIN, loadState(CHILD_ID_LED_G));
    analogWrite(LED_B_DIGITAL_PIN, loadState(CHILD_ID_LED_B));
@@ -146,28 +152,30 @@ bool lastMotionState = false;
 //------------------------------------------------------------------------------
 void updateMotionSensorValues (unsigned long currentTime) {
  bool motionState = digitalRead(MOTION_SENSOR_DIGITAL_PIN) == HIGH; 
- if (motionState != lastMotionState)	{
+ 
+ if (motionState != lastMotionState || motionUpdateCounter++ > MAX_MOTION_UPDATE_COUNTER)	{
    lastMotionState = motionState;
+   motionUpdateCounter = 0;
    send(msgMotion.set(motionState));
  }
 }
 
 //------------------------------------------------------------------------------
+#define GAS_DELTA 20
 void updateGasSensorValues (unsigned long currentTime) {
- //uint8_t gasValue = gas.get();
 
-  /*read the values from the sensor, it returns
-  *an array which contains 3 values.
-  * 1 = LPG in ppm
-  * 2 = CO in ppm
-  * 3 = SMOKE in ppm
-  */
-  float * gasData= gas.read(true);
-
- if (!isnan(gasData[0]) &&  byteValuesChanged(gasData[0], lastGasValue)) {
-   lastGasValue = gasData[0];
-   send(msgGas.set(gasData[0], 1));
- }
+  gas.read(true);
+  float lpgValue =  gas.readLPG();
+  if (!isnan(lpgValue) && abs(lpgValue - lastGasValue) > GAS_DELTA) {
+     lastGasValue = lpgValue;
+     Serial.print("--------- Sending GAS data: ");
+     Serial.println(lastGasValue);
+     send(msgGas.set(lpgValue, 2));
+  }
+  else if (gasUpdateCounter ++ > MAX_GAS_UPDATE_COUNTER) {
+    gasUpdateCounter = 0;
+    send(msgGas.set(lastGasValue, 2));
+  }
 
 //        if (gasValue > 120) {
 //          ledR.on();
@@ -210,34 +218,47 @@ bool floatValuesChanged(float valueOne, float valueTwo) {
 //------------------------------------------------------------------------------
 //	TODO: add a range
 bool byteValuesChanged(uint8_t valueOne, uint8_t valueTwo) {
-
-
-       return (abs(valueOne - valueTwo) > 10);
- //return (uint8_t)(valueOne/100) != (uint8_t)(valueTwo/100);
+   return (abs(valueOne - valueTwo) > 10);
 }
 
-
 //------------------------------------------------------------------------------
-void incomingMessage(const MyMessage &message) {
 
- // 1. handle buzzer values
- // 2. handle r, g, b leg values
+#define IR_NODE           103
+#define DISPLAY_NODE      102
 
- if (message.sensor == CHILD_ID_BUZZER) {
-       buzzer.play(message.getInt(), 200);
- }
- else if (message.sensor == CHILD_ID_LED_R && message.type == V_LIGHT) {
-   analogWrite(LED_R_DIGITAL_PIN, message.getByte());
-   saveState(message.sensor, message.getByte());
- }
- else if (message.sensor == CHILD_ID_LED_G && message.type == V_LIGHT) {
-    analogWrite(LED_G_DIGITAL_PIN, message.getByte());
-    saveState(message.sensor, message.getByte());
- }
- else if (message.sensor == CHILD_ID_LED_B && message.type == V_LIGHT) {
-   analogWrite(LED_B_DIGITAL_PIN, message.getByte());
-   saveState(message.sensor, message.getByte());
+void receive(const MyMessage &message) {
 
- }
 
+  if (message.sender== IR_NODE) {
+      if (message.type == S_TEMP) {
+
+        msgTemp.destination = DISPLAY_NODE;
+        msgTemp.type = S_TEMP;
+        send(msgTemp.set(lastTemperatureValue, 2));
+
+      } else if (message.type == S_HUM) {
+        msgHum.destination = DISPLAY_NODE;
+        msgHum.type = S_HUM;
+        send(msgTemp.set(lastHumidityValue, 2));
+      }
+        
+    }
+    else 
+    // 1. handle buzzer values
+    // 2. handle r, g, b leg values
+    if (message.sensor == CHILD_ID_BUZZER) {
+         buzzer.play(message.getInt(), 200);
+    }
+    else if (message.sensor == CHILD_ID_LED_R && message.type == V_PERCENTAGE) {
+     analogWrite(LED_R_DIGITAL_PIN, message.getByte());
+     saveState(message.sensor, message.getByte());
+    }
+    else if (message.sensor == CHILD_ID_LED_G && message.type == V_PERCENTAGE) {
+      analogWrite(LED_G_DIGITAL_PIN, message.getByte());
+      saveState(message.sensor, message.getByte());
+    }
+    else if (message.sensor == CHILD_ID_LED_B && message.type == V_PERCENTAGE) {
+     analogWrite(LED_B_DIGITAL_PIN, message.getByte());
+     saveState(message.sensor, message.getByte());
+    }
 }
